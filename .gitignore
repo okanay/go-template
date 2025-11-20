@@ -1,0 +1,58 @@
+# --- 1. Derleme ve Binary Dosyaları ---
+# "go build" çıktılarının git'e gitmesini istemeyiz.
+/bin/
+/build/
+/dist/
+
+# Kök dizinde oluşabilecek binary isimleri (Makefile ayarlarına göre)
+/main
+/api
+/migrate
+/worker
+
+# Windows binary uzantıları
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# --- 2. Ortam Değişkenleri ve Sırlar ---
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+# .env-example dosyasını hariç tut (o git'e gitmeli)
+!.env-example
+
+# --- 3. IDE ve Editör Dosyaları ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- 4. Go Test ve Coverage ---
+*.out
+*.test
+coverage.txt
+
+# --- 5. Geçici Dosyalar ve Hot-Reload ---
+# "Air" aracı kullanıyorsan tmp klasörü oluşturur.
+tmp/
+
+# --- 6. Bağımlılıklar (Opsiyonel) ---
+# Eğer "vendor" modunu kullanmıyorsan bunu ignore edebilirsin.
+# Genelde Go modülleri cache'den okunur.
+vendor/
+
+# --- 7. Yerel Yüklemeler (Local Uploads) ---
+# Eğer local testlerde R2 yerine diske dosya kaydedersen diye.
+uploads/
+storage/
+
+# --- 8. SSL Sertifikaları (Local HTTPS için) ---
+*.pem
+*.key
