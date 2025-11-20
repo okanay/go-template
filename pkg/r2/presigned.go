@@ -15,7 +15,7 @@ import (
 
 // Input ve Output structları
 type R2PresigInput struct {
-	Filename     string `json:"filename" validate:"required"`
+	Filename     string `json:"filename" validate:"required,min=5,file_ext=jpg png webp jpeg svg pdf docx xls xlsx mp4 mov avi"`
 	ContentType  string `json:"contentType" validate:"required"`
 	SizeInBytes  int64  `json:"sizeInBytes" validate:"required,max=10485760"`
 	FileCategory string `json:"fileCategory"`
