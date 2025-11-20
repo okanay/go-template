@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# chmod +x rename.sh
-# ./rename.sh github.com/okanay/go-template
+# chmod +x ./cmd/rename.sh
+# ./cmd/rename.sh github.com/okanay/go-template
 
 
 # Hata durumunda dur
