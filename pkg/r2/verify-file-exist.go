@@ -11,14 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-type R2FileMetadata struct {
-	Size         int64     `json:"size"`
-	ContentType  string    `json:"contentType"`
-	LastModified time.Time `json:"lastModified"`
-	ETag         string    `json:"etag"`
-}
-
-func (r *R2) VerifyFileExists(ctx context.Context, objectKey string) (*R2FileMetadata, error) {
+func (r *R2) VerifyFileExists(ctx context.Context, objectKey string) (*FileMetadata, error) {
 	output, err := r.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(r.bucketName),
 		Key:    aws.String(objectKey),
@@ -54,7 +47,7 @@ func (r *R2) VerifyFileExists(ctx context.Context, objectKey string) (*R2FileMet
 		lastMod = *output.LastModified
 	}
 
-	return &R2FileMetadata{
+	return &FileMetadata{
 		Size:         size,
 		ContentType:  contentType,
 		LastModified: lastMod,

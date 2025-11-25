@@ -13,22 +13,7 @@ import (
 	"github.com/okanay/go-template/pkg/utils"
 )
 
-// Input ve Output structları
-type R2PresigInput struct {
-	Filename     string `json:"filename" validate:"required,min=5,file_ext=jpg png webp jpeg svg pdf docx xls xlsx mp4 mov avi"`
-	ContentType  string `json:"contentType" validate:"required"`
-	SizeInBytes  int64  `json:"sizeInBytes" validate:"required,max=10485760"`
-	FileCategory string `json:"fileCategory"`
-}
-
-type R2PresignedOutput struct {
-	PresignedURL string    `json:"presignedUrl"`
-	UploadURL    string    `json:"uploadUrl"`
-	ObjectKey    string    `json:"objectKey"`
-	ExpiresAt    time.Time `json:"expiresAt"`
-}
-
-func (r *R2) GeneratePresignedURL(ctx context.Context, input R2PresigInput) (*R2PresignedOutput, error) {
+func (r *R2) GeneratePresignedURL(ctx context.Context, input UploadInput) (*UploadOutput, error) {
 	ext := filepath.Ext(input.Filename)                // .docx
 	nameRaw := strings.TrimSuffix(input.Filename, ext) // Okan Ay Vize
 	safeName := utils.SanitizeFilename(nameRaw)        // okan-ay-vize
@@ -56,7 +41,7 @@ func (r *R2) GeneratePresignedURL(ctx context.Context, input R2PresigInput) (*R2
 
 	publicURL := fmt.Sprintf("%s/%s", strings.TrimRight(r.publicURLBase, "/"), objectKey)
 
-	return &R2PresignedOutput{
+	return &UploadOutput{
 		PresignedURL: req.URL,
 		UploadURL:    publicURL,
 		ObjectKey:    objectKey,
