@@ -1,8 +1,13 @@
 package middleware
 
+import "github.com/okanay/go-template/internal/auth"
+
 type Manager struct {
+	authService *auth.Service
 }
 
-func NewManager() *Manager {
-	return &Manager{}
+func NewManager(authService *auth.Service) *Manager {
+	return &Manager{
+		authService: authService,
+	}
 }
