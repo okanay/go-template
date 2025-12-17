@@ -456,6 +456,33 @@ func GetBlogCached(id string) (BlogPost, error) {
 }
 ```
 
+### Dependency Set Boyutu Hakkında
+
+```
+Dependency set'inde kaç item olur?
+
+Set'e eklenen item'lar = Cache MISS sonrası async yazılan item'lar
+
+Yani bir item'ın set'te olması için:
+  1. TTL süresi içinde okunmuş olmalı
+  2. Henüz expire olmamış olmalı
+
+Pratikte:
+  ┌─────────────────────────────────────────────────────────┐
+  │ Author'ın 500 blog postu var                            │
+  │ TTL: 30 dakika                                          │
+  │                                                         │
+  │ 30dk içinde kaçı okunur? → Belki 50-100                 │
+  │ Geri kalanı zaten cache'te yok                          │
+  │                                                         │
+  │ Dependency set boyutu: ~50-100 entry (binlerce değil!)  │
+  │ SCAN maliyeti: 10-50ms (kabul edilebilir)               │
+  └─────────────────────────────────────────────────────────┘
+
+NOT: Set'te expire olmuş item key'leri kalabilir.
+     UNLINK zaten olmayan key için no-op çalışır (zararsız).
+```
+
 ### Liste Invalidation
 
 ```
