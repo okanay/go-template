@@ -16,6 +16,76 @@ type Cacheable interface {
 	}
 }
 
+// Tek bir item'ı cache'ten veya DB'den getirir.
+func GetItem[T Cacheable](
+	ctx context.Context,
+	rdb *RedisClient,
+	domain string,
+	id string,
+	expiration time.Duration,
+	dbFetcher func() (T, error),
+) (T, error) {
+	// 1. Key Oluşturma
+	key := rdb.BuildKeyItem(domain, id)
+
+	var result T
+	var cacheHit = false
+
+	// 2. Redis'ten Sorgula
+	val, err := rdb.client.Get(ctx, key).Result()
+
+	if err == nil {
+		// Cache Hit! JSON'ı parse et
+		if jsonErr := json.Unmarshal([]byte(val), &result); jsonErr == nil {
+			cacheHit = true
+		}
+		// Eğer JSON bozuksa (jsonErr != nil), cacheHit false kalır, aşağıdan DB'ye gideriz (Auto-heal).
+	} else if err != redis.Nil {
+		// redis.Nil dışındaki hatalar (bağlantı kopması vs.) loglanabilir
+		// ama akışı bozmamak için DB'ye gitmeye devam ederiz.
+	}
+
+	if cacheHit {
+		return result, nil
+	}
+
+	// 3. Cache Miss: DB'den çek
+	data, err := dbFetcher()
+	if err != nil {
+		// Data DB'de de yoksa veya DB hatası varsa boş değer ve hatayı dön
+		var zero T
+		return zero, err
+	}
+
+	// 4. Redis'e Yaz (Asenkron - Response süresini uzatmamak için)
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		pipe := rdb.client.Pipeline()
+
+		// A. Datayı JSON yap
+		jsonData, _ := json.Marshal(data)
+		pipe.Set(bgCtx, key, jsonData, expiration)
+
+		// B. Dependency (Bağımlılık) Kayıtlarını Oluştur
+		// Bu kısım ÇOK ÖNEMLİ. Detay sayfası ilk kez açıldığında da
+		// "Bu blog şu yazara aittir" bilgisini Redis'e işlemeliyiz.
+		for _, dep := range data.GetDependencies() {
+			depKey := rdb.BuildKeyDep(dep.Domain, dep.Id)
+			// Set'e ekle: "deps:user:5" setine "blog:item:100" eklenir.
+			pipe.SAdd(bgCtx, depKey, key)
+			// Dependency key'in ömrünü de uzat (veya sabitle)
+			pipe.Expire(bgCtx, depKey, expiration)
+		}
+
+		_, _ = pipe.Exec(bgCtx)
+	}()
+
+	return data, nil
+}
+
+// Cache'lenmiş bir listeyi getirir veya oluşturur.
 func GetList[T Cacheable](
 	ctx context.Context,
 	rdb *RedisClient,
@@ -99,7 +169,9 @@ func GetList[T Cacheable](
 
 	// 3. ADIM: Arka planda Redis'i doldur/onar (Pipeline)
 	go func() {
-		bgCtx := context.Background()
+		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
 		pipe := rdb.client.Pipeline()
 		var ids []string
 
@@ -123,73 +195,6 @@ func GetList[T Cacheable](
 
 		idsJSON, _ := json.Marshal(ids)
 		pipe.Set(bgCtx, listKey, idsJSON, expiration)
-
-		_, _ = pipe.Exec(bgCtx)
-	}()
-
-	return data, nil
-}
-
-// Tek bir item'ı cache'ten veya DB'den getirir.
-func GetItem[T Cacheable](
-	ctx context.Context,
-	rdb *RedisClient,
-	domain string,
-	id string,
-	expiration time.Duration,
-	dbFetcher func() (T, error),
-) (T, error) {
-	// 1. Key Oluşturma
-	key := rdb.BuildKeyItem(domain, id)
-
-	var result T
-	var cacheHit = false
-
-	// 2. Redis'ten Sorgula
-	val, err := rdb.client.Get(ctx, key).Result()
-
-	if err == nil {
-		// Cache Hit! JSON'ı parse et
-		if jsonErr := json.Unmarshal([]byte(val), &result); jsonErr == nil {
-			cacheHit = true
-		}
-		// Eğer JSON bozuksa (jsonErr != nil), cacheHit false kalır, aşağıdan DB'ye gideriz (Auto-heal).
-	} else if err != redis.Nil {
-		// redis.Nil dışındaki hatalar (bağlantı kopması vs.) loglanabilir
-		// ama akışı bozmamak için DB'ye gitmeye devam ederiz.
-	}
-
-	if cacheHit {
-		return result, nil
-	}
-
-	// 3. Cache Miss: DB'den çek
-	data, err := dbFetcher()
-	if err != nil {
-		// Data DB'de de yoksa veya DB hatası varsa boş değer ve hatayı dön
-		var zero T
-		return zero, err
-	}
-
-	// 4. Redis'e Yaz (Asenkron - Response süresini uzatmamak için)
-	go func() {
-		bgCtx := context.Background()
-		pipe := rdb.client.Pipeline()
-
-		// A. Datayı JSON yap
-		jsonData, _ := json.Marshal(data)
-		pipe.Set(bgCtx, key, jsonData, expiration)
-
-		// B. Dependency (Bağımlılık) Kayıtlarını Oluştur
-		// Bu kısım ÇOK ÖNEMLİ. Detay sayfası ilk kez açıldığında da
-		// "Bu blog şu yazara aittir" bilgisini Redis'e işlemeliyiz.
-		for _, dep := range data.GetDependencies() {
-			depKey := rdb.BuildKeyDep(dep.Domain, dep.Id)
-			// Set'e ekle: "deps:user:5" setine "blog:item:100" eklenir.
-			pipe.SAdd(bgCtx, depKey, key)
-			// Dependency key'in ömrünü de uzat (veya sabitle)
-			pipe.Expire(bgCtx, depKey, expiration)
-		}
 
 		_, _ = pipe.Exec(bgCtx)
 	}()

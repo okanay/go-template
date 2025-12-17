@@ -72,32 +72,7 @@ func InvalidateItemWithDep(ctx context.Context, rdb *RedisClient, domain string,
 	return err
 }
 
-// Örn: "blog:list:*" dersen tüm blog listelerini temizler.
-func InvalidatePattern(ctx context.Context, rdb *RedisClient, pattern string) error {
-	// SCAN komutu Redis'i kilitlemeden arama yapar.
-	iter := rdb.client.Scan(ctx, 0, pattern, 0).Iterator()
-
-	// Bulduğu keyleri biriktirip silmek için
-	var keys []string
-
-	for iter.Next(ctx) {
-		keys = append(keys, iter.Val())
-	}
-
-	if err := iter.Err(); err != nil {
-		return err
-	}
-
-	// Eğer silinecek bir şey bulduysa sil
-	if len(keys) > 0 {
-		// UNLINK, DEL komutunun daha hızlısı ve asenkron olanıdır.
-		// Büyük listeleri silerken Redis'i yormaz.
-		return rdb.client.Unlink(ctx, keys...).Err()
-	}
-
-	return nil
-}
-
-func FlushCache(ctx context.Context, rdb *RedisClient) error {
+// Bütün Redis Cache'i temizle.
+func InvalidateAllCache(ctx context.Context, rdb *RedisClient) error {
 	return rdb.client.FlushDB(ctx).Err()
 }
