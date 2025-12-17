@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -22,20 +23,24 @@ func Initialize(addr []string, username, password string, dbStr string) error {
 	var initErr error
 
 	once.Do(func() {
-		ctx := context.Background()
-
 		db, err := strconv.Atoi(dbStr)
 		if err != nil {
-			initErr = fmt.Errorf("failed to convert Redis DB string to integer: %w", err)
+			initErr = fmt.Errorf("redis db parse error: %w", err)
 			return
 		}
 
 		rdb := redis.NewUniversalClient(&redis.UniversalOptions{
-			Addrs:    addr,
-			Username: username,
-			Password: password,
-			DB:       db,
+			Addrs:        addr,
+			Username:     username,
+			Password:     password,
+			DB:           db,
+			DialTimeout:  5 * time.Second,
+			ReadTimeout:  3 * time.Second,
+			WriteTimeout: 3 * time.Second,
 		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
 		if _, err := rdb.Ping(ctx).Result(); err != nil {
 			initErr = fmt.Errorf("redis connection failed: %w", err)
@@ -48,9 +53,9 @@ func Initialize(addr []string, username, password string, dbStr string) error {
 	return initErr
 }
 
-func GetRedisClient() *RedisClient {
+func GetClient() *RedisClient {
 	if instance == nil {
-		panic("redis: Initialize() must be called before using redis package")
+		panic("redis not initialized")
 	}
 	return instance
 }
