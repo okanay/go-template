@@ -30,7 +30,7 @@ func main() {
 	redisPass := os.Getenv("REDIS_PASS")
 	redisDB := os.Getenv("REDIS_DB")
 
-	_, err = redis.NewRedisClient(
+	_, err = redis.Initialize(
 		[]string{redisAddr},
 		redisUsername,
 		redisPass,

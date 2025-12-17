@@ -11,14 +11,14 @@ import (
 // Varsa üzerine yazar, yoksa oluşturur.
 func UpsertItem[T Cacheable](
 	ctx context.Context,
-	rdb *RedisClient,
 	domain string,
 	data T,
 	expiration time.Duration,
 ) error {
+	rdb := GetRedisClient()
 	// 1. Key Oluştur
 	id := data.GetID()
-	key := rdb.BuildKeyItem(domain, id)
+	key := BuildKeyItem(domain, id)
 
 	// 2. Data'yı JSON yap
 	jsonData, err := json.Marshal(data)
@@ -36,7 +36,7 @@ func UpsertItem[T Cacheable](
 	// Örneğin Blog güncellendiğinde, Author ID değişmiş olabilir.
 	// Yeni dependency setine de eklemeliyiz.
 	for _, dep := range data.GetDependencies() {
-		depKey := rdb.BuildKeyDep(dep.Domain, dep.Id)
+		depKey := BuildKeyDep(dep.Domain, dep.Id)
 		pipe.SAdd(ctx, depKey, key)
 		pipe.Expire(ctx, depKey, expiration)
 	}

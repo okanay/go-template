@@ -7,16 +7,18 @@ import (
 
 // Bir entity güncellendiğinde veya silindiğinde çağrılır.
 // Hem kendi item cache'ini siler, hem de ona bağlı olan listeleri (opsiyonel) temizler.
-func InvalidateItem(ctx context.Context, rdb *RedisClient, domain string, id string) error {
-	key := rdb.BuildKeyItem(domain, id)
+func InvalidateItem(ctx context.Context, domain string, id string) error {
+	rdb := GetRedisClient()
+	key := BuildKeyItem(domain, id)
 	return rdb.client.Del(ctx, key).Err()
 }
 
 // Bir dependency (örn: Author) değiştiğinde,
 // ona bağımlı olan asıl kayıtları (örn: Blogları) bulur ve siler.
-func InvalidateByDependency(ctx context.Context, rdb *RedisClient, domain string, id string) error {
+func InvalidateByDependency(ctx context.Context, domain string, id string) error {
+	rdb := GetRedisClient()
 	// Örn: depString = "user:123" -> Key: "deps:user:123"
-	depKey := rdb.BuildKeyDep(domain, id)
+	depKey := BuildKeyDep(domain, id)
 
 	// 1. Bu dependency'e bağlı olan item key'lerini (örn: blog:item:100, blog:item:101) çek
 	keys, err := rdb.client.SMembers(ctx, depKey).Result()
@@ -47,15 +49,17 @@ func InvalidateByDependency(ctx context.Context, rdb *RedisClient, domain string
 
 // Bir kayıt silindiğinde/güncellendiğinde çağır.
 // Hem kaydın kendisini siler, hem de ona bağımlı olanları (örn: Yazarın blogları) temizler.
-func InvalidateItemWithDep(ctx context.Context, rdb *RedisClient, domain string, id string) error {
+func InvalidateItemWithDep(ctx context.Context, domain string, id string) error {
+	rdb := GetRedisClient()
+
 	// 1. Silinecek anahtarları topla
 	keysToDelete := []string{}
 
 	// Ana item key'i (örn: user:item:123)
-	itemKey := rdb.BuildKeyItem(domain, id)
+	itemKey := BuildKeyItem(domain, id)
 	keysToDelete = append(keysToDelete, itemKey)
 
-	depKey := rdb.BuildKeyDep(domain, id)
+	depKey := BuildKeyDep(domain, id)
 
 	// Bu kayda bağımlı olan diğer kayıtları bul (örn: blog:item:10, blog:item:11)
 	dependents, _ := rdb.client.SMembers(ctx, depKey).Result()
@@ -73,6 +77,7 @@ func InvalidateItemWithDep(ctx context.Context, rdb *RedisClient, domain string,
 }
 
 // Bütün Redis Cache'i temizle.
-func InvalidateAllCache(ctx context.Context, rdb *RedisClient) error {
+func InvalidateAllCache(ctx context.Context) error {
+	rdb := GetRedisClient()
 	return rdb.client.FlushDB(ctx).Err()
 }
