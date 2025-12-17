@@ -18,7 +18,6 @@ type R2 struct {
 	publicURLBase string
 }
 
-// NewR2Client factory fonksiyonu artık error dönüyor (Best Practice)
 func NewR2Client(ctx context.Context, accountID, accessKeyID, accessKeySecret, bucketName, folderName, publicURLBase, endpoint string) (*R2, error) {
 	// SDK konfigürasyonu
 	cfg, err := config.LoadDefaultConfig(ctx,

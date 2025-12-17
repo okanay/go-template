@@ -10,7 +10,7 @@ import (
 )
 
 func (h *Handler) CreatePresignedURL(c *gin.Context) {
-	var input r2.R2PresigInput
+	var input r2.UploadInput
 
 	if violations := h.validator.BindAndValidate(c, &input, validation.JSON); violations != nil {
 		apierror.ValidationError(c, violations)

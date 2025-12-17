@@ -11,21 +11,20 @@ type ErrorMessage string
 
 type AppError struct {
 	Status  int          `json:"-"`
-	Key     ErrorKey     `json:"error_key,omitempty"`
+	Key     ErrorKey     `json:"errorKey"`
 	Message ErrorMessage `json:"message"`
 	Details any          `json:"details,omitempty"`
 }
 
-// Sadece Global/Generik Hatalar Burada Kalır
 const (
 	// Error Keys
-	ErrValidation   ErrorKey = "validation_error"
-	ErrInternal     ErrorKey = "internal_error"
-	ErrUnauthorized ErrorKey = "unauthorized"
-	ErrNotFound     ErrorKey = "not_found"
-	ErrForbidden    ErrorKey = "forbidden"
-	ErrBadRequest   ErrorKey = "bad_request"
-	ErrConflict     ErrorKey = "conflict"
+	ErrValidation   ErrorKey = "Validation"
+	ErrInternal     ErrorKey = "Internal"
+	ErrUnauthorized ErrorKey = "Unauthorized"
+	ErrNotFound     ErrorKey = "Not found"
+	ErrForbidden    ErrorKey = "Forbidden"
+	ErrBadRequest   ErrorKey = "Bad request"
+	ErrConflict     ErrorKey = "Conflict"
 
 	// Error Messages
 	MsgValidation   ErrorMessage = "Validation failed. Please check your input."
@@ -37,7 +36,6 @@ const (
 	MsgConflict     ErrorMessage = "Conflict. Resource already exists."
 )
 
-// Helper fonksiyonlar aynen kalır
 func Error(c *gin.Context, status int, key ErrorKey, msg ErrorMessage) {
 	c.AbortWithStatusJSON(status, AppError{
 		Status:  status,

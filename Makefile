@@ -16,7 +16,6 @@ all: help
 ## ----------------------------------------------------------------------
 
 # Uygulamayı hot-reload modu ile çalıştır (Air kullanarak)
-# Gereksinim: 'air' yüklü olmalıdır. (go install github.com/air-verse/air@latest)
 dev:
 	@echo "🔄 Geliştirme modu (Hot-Reload) başlatılıyor..."
 	air
@@ -39,11 +38,3 @@ clean:
 	@rm -f bin/$(BINARY_NAME)
 	@rm -rf tmp
 	@echo "✅ Temizlendi."
-
-# Yardım menüsü
-help:
-	@echo "Kullanılabilir Komutlar:"
-	@echo "  make dev    - Uygulamayı Air ile hot-reload modunda başlatır (Önerilen)"
-	@echo "  make run    - Uygulamayı normal modda başlatır"
-	@echo "  make build  - Uygulamayı derler (bin/ klasörüne)"
-	@echo "  make clean  - Derlenmiş dosyaları temizler"
