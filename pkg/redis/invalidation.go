@@ -62,3 +62,26 @@ func InvalidateAllCache(ctx context.Context) error {
 	rdb := GetRedisClient()
 	return rdb.client.FlushDB(ctx).Err()
 }
+
+func InvalidateAllViews(ctx context.Context, domain string, identifier string) error {
+	rdb := GetRedisClient()
+	pattern := BuildKeyItemWildCard(domain, identifier)
+
+	// SCAN ile bul ve sil
+	iter := rdb.client.Scan(ctx, 0, pattern, 100).Iterator()
+	var keys []string
+
+	for iter.Next(ctx) {
+		keys = append(keys, iter.Val())
+	}
+
+	if err := iter.Err(); err != nil {
+		return err
+	}
+
+	if len(keys) > 0 {
+		return rdb.client.Unlink(ctx, keys...).Err()
+	}
+
+	return nil
+}
